@@ -11,6 +11,7 @@ import os
 
 def get_google_news_articles_selenium(keyword, num_articles=10):
     """Fetches Google News articles from the last 15 days using Selenium."""
+    article_links = [] #define article_links variable as a global
     try:
         chrome_options = Options()
         chrome_options.add_argument("--headless")
@@ -31,15 +32,15 @@ def get_google_news_articles_selenium(keyword, num_articles=10):
         driver.delete_all_cookies()
 
         try:
-            # Wait for the article containers to be present
+            # Wait for the article containers to be present and visible
             WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "div.XlKvRb"))
+                EC.visibility_of_all_elements_located((By.CSS_SELECTOR, "div.XlKvRb"))
             )
 
-            print("Explicit wait successful - article containers found") #Success Statement
+            print("Explicit wait successful - article containers found and visible")  # Success Statement
             article_containers = driver.find_elements(By.CSS_SELECTOR, "div.XlKvRb")
             print(f"Found {len(article_containers)} article containers.")  # Debugging
-            print(f"Page Source:{driver.page_source}")
+            print(f"Page Source:{driver.page_source}") #Check here to see if it is working
 
             for container in article_containers:
                 try:
@@ -54,7 +55,6 @@ def get_google_news_articles_selenium(keyword, num_articles=10):
 
                     # Add the absolute link to the list
                     if absolute_href and "google.com" not in absolute_href: #Get rid of internal google links
-                        article_links = [] #Make sure article links are properly used to extract
                         article_links.append(absolute_href)
 
                     time.sleep(random.uniform(0.5, 1.5))  # Add a small random delay
