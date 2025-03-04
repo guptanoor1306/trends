@@ -6,72 +6,51 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime, timedelta
 import time
-import random
 import os
 
 def get_google_news_articles_selenium(keyword, num_articles=10):
-    """Fetches Google News articles from the last 15 days using Selenium."""
-    article_links = [] #define article_links variable as a global
+    """Simplified version to find *any* article containers."""
+    article_links = []
+
     try:
         chrome_options = Options()
         chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--no-sandbox")  # Required for some cloud environments
-        chrome_options.add_argument("--disable-dev-shm-usage")  # Often helps with memory issues
-        chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")  # Add User Agent
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 
-        #Set the path to chromedriver. Check your PATH
         driver = webdriver.Chrome(options=chrome_options)
-
 
         date_15_days_ago = datetime.now() - timedelta(days=15)
         date_str = date_15_days_ago.strftime("%m/%d/%Y")
         search_url = f"https://www.google.com/search?q={keyword}&hl=en-IN&gl=IN&ceid=IN%3Aen&tbm=nws&source=lnt&tbs=cdr:1,cd_min:{date_str},cd_max:{datetime.now().strftime('%m/%d/%Y')}"
 
         driver.get(search_url)
-        print(f"Page Source Initial:{driver.page_source}")
-        driver.delete_all_cookies()
 
         try:
-            # Wait for the article containers to be present and visible
+            # Wait for at least *one* article container to be present
             WebDriverWait(driver, 10).until(
-                EC.visibility_of_all_elements_located((By.CSS_SELECTOR, "div.XlKvRb"))
+                EC.presence_of_element_located((By.CSS_SELECTOR, "div.XlKvRb"))
             )
+            print("WebDriverWait successful: At least one article container found!")
 
-            print("Explicit wait successful - article containers found and visible")  # Success Statement
             article_containers = driver.find_elements(By.CSS_SELECTOR, "div.XlKvRb")
-            print(f"Found {len(article_containers)} article containers.")  # Debugging
-            print(f"Page Source:{driver.page_source}") #Check here to see if it is working
+            print(f"Number of article containers found: {len(article_containers)}")
 
-            for container in article_containers:
-                try:
-                    # Find the link within the container
-                    link_element = container.find_element(By.CSS_SELECTOR, "a.WwrzSb")
-                    relative_href = link_element.get_attribute("href")
+            # If we get here, we found *something*. Let's just return an empty list
+            return []
 
-                    #Construct absolute link
-                    absolute_href = relative_href #Absolute Href to reduce confusion
-
-                    print(f"Absolute Href: {absolute_href}")
-
-                    # Add the absolute link to the list
-                    if absolute_href and "google.com" not in absolute_href: #Get rid of internal google links
-                        article_links.append(absolute_href)
-
-                    time.sleep(random.uniform(0.5, 1.5))  # Add a small random delay
-
-                except Exception as e:
-                    print(f"Error extracting link from container: {e}")  # Debugging
-
-            article_links = article_links[:num_articles]  # Limit the number of links
         except Exception as e:
-            st.error(f"Error extracting article links: {e}")
+            print(f"WebDriverWait failed or no article containers found: {e}") #error printing
+            st.error(f"Error getting article containers: {e}") #This will show as streamlit
 
-        driver.quit()
-        return article_links
+            # Add the HTML so we can debug
+            st.write(driver.page_source)
 
+            driver.quit() #still need to ensure that the driver quits
+            return []
     except Exception as e:
-        st.error(f"Error fetching Google News articles: {e}")
-        return []
+        st.error(f"Initial Selenium setup failed: {e}")
 
 # --- Streamlit App ---
 
