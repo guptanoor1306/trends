@@ -6,10 +6,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime, timedelta
 import time
+import random
 import os
 
 def get_google_news_articles_selenium(keyword, num_articles=10):
-    """Simplified version to find *any* article containers."""
+    """Fetches Google News articles from the last 15 days using Selenium."""
     article_links = []
 
     try:
@@ -26,31 +27,55 @@ def get_google_news_articles_selenium(keyword, num_articles=10):
         search_url = f"https://www.google.com/search?q={keyword}&hl=en-IN&gl=IN&ceid=IN%3Aen&tbm=nws&source=lnt&tbs=cdr:1,cd_min:{date_str},cd_max:{datetime.now().strftime('%m/%d/%Y')}"
 
         driver.get(search_url)
+        time.sleep(random.uniform(2, 7)) # Add initial random delay
 
         try:
-            # Wait for at least *one* article container to be present
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "div.XlKvRb"))
+            # Wait for at least *one* article link to be present and visible
+            WebDriverWait(driver, 20).until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, "a.WwrzSb"))
             )
-            print("WebDriverWait successful: At least one article container found!")
+            print("WebDriverWait successful: At least one article link found!")
 
             article_containers = driver.find_elements(By.CSS_SELECTOR, "div.XlKvRb")
             print(f"Number of article containers found: {len(article_containers)}")
 
-            # If we get here, we found *something*. Let's just return an empty list
-            return []
+            for container in article_containers:
+                try:
+                    # Find the link within the container
+                    link_element = container.find_element(By.CSS_SELECTOR, "a.WwrzSb")
+                    relative_href = link_element.get_attribute("href")
 
+                    #Construct absolute link
+                    absolute_href = relative_href #Absolute Href to reduce confusion
+
+                    print(f"Absolute Href: {absolute_href}")
+
+                    # Add the absolute link to the list
+                    if absolute_href and "google.com" not in absolute_href:
+                        article_links.append(absolute_href)
+
+                    time.sleep(random.uniform(0.5, 1.5))  # Add a small random delay
+
+                except Exception as e:
+                    print(f"Error extracting link from container: {e}")
+
+            article_links = article_links[:num_articles]  # Limit the number of links
         except Exception as e:
-            print(f"WebDriverWait failed or no article containers found: {e}") #error printing
-            st.error(f"Error getting article containers: {e}") #This will show as streamlit
+            print(f"WebDriverWait failed or no article containers found: {e}")
+            st.error(f"Error getting article containers: {e}")
 
             # Add the HTML so we can debug
             st.write(driver.page_source)
 
             driver.quit() #still need to ensure that the driver quits
-            return []
+            return article_links  # Return the article links anyway
+
+        driver.quit()
+        return article_links
+
     except Exception as e:
         st.error(f"Initial Selenium setup failed: {e}")
+        return []
 
 # --- Streamlit App ---
 
