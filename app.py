@@ -10,6 +10,8 @@ def get_google_news_articles_selenium(keyword, num_articles=10):
     try:
         chrome_options = Options()
         chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--no-sandbox")  # Required for some cloud environments
+        chrome_options.add_argument("--disable-dev-shm-usage")  # Often helps with memory issues
         driver = webdriver.Chrome(options=chrome_options)
 
         date_15_days_ago = datetime.now() - timedelta(days=15)
