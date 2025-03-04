@@ -32,12 +32,13 @@ def get_google_news_articles_selenium(keyword, num_articles=10):
         try:
             # Wait for at least *one* article link to be present and visible
             WebDriverWait(driver, 20).until(
-                EC.visibility_of_element_located((By.CSS_SELECTOR, "a.WwrzSb"))
+                EC.presence_of_element_located((By.CSS_SELECTOR, "a.WwrzSb"))
             )
             print("WebDriverWait successful: At least one article link found!")
 
+            print(f"Page Source:{driver.page_source}")
+
             article_containers = driver.find_elements(By.CSS_SELECTOR, "div.XlKvRb")
-            print(f"Number of article containers found: {len(article_containers)}")
 
             for container in article_containers:
                 try:
@@ -62,13 +63,13 @@ def get_google_news_articles_selenium(keyword, num_articles=10):
             article_links = article_links[:num_articles]  # Limit the number of links
         except Exception as e:
             print(f"WebDriverWait failed or no article containers found: {e}")
-            st.error(f"Error getting article containers: {e}")
+            st.error(f"Error getting article links: {e}")
 
             # Add the HTML so we can debug
             st.write(driver.page_source)
 
             driver.quit() #still need to ensure that the driver quits
-            return article_links  # Return the article links anyway
+            return article_links
 
         driver.quit()
         return article_links
