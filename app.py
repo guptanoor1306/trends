@@ -1,70 +1,64 @@
 import streamlit as st
-from pytrends.request import TrendReq
-from GoogleNews import GoogleNews
-import time  # Import the time module
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from datetime import datetime, timedelta
+import time
 
-# --- Helper Functions ---
-
-def get_google_trends_score(keyword, geo='US'):  # geo is country code, defaults to US
-    """Fetches Google Trends data for a keyword."""
-    pytrends = TrendReq(hl='en-US', tz=360)  # hl is language, tz is timezone
+def get_google_news_articles_selenium(keyword, num_articles=10):
+    """Fetches Google News articles from the last 15 days using Selenium."""
     try:
-        pytrends.build_payload([keyword], cat=0, timeframe='today 5-y', geo=geo, gprop='') #cat is category, timeframe is time period
-        interest_over_time_df = pytrends.interest_over_time()
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")
+        driver = webdriver.Chrome(options=chrome_options)
 
-        if not interest_over_time_df.empty:
-          # Calculate a simple score (e.g., average interest over time)
-          # You can customize this scoring logic as needed
-          trend_score = interest_over_time_df[keyword].mean()
-          return trend_score
-        else:
-          return None
+        date_15_days_ago = datetime.now() - timedelta(days=15)
+        date_str = date_15_days_ago.strftime("%m/%d/%Y")
+        search_url = f"https://www.google.com/search?q={keyword}&hl=en&tbm=nws&source=lnt&tbs=cdr:1,cd_min:{date_str},cd_max:{datetime.now().strftime('%m/%d/%Y')}"
+
+        driver.get(search_url)
+        time.sleep(5)
+
+        # **ROBUST RELATIVE XPATH:**
+        article_xpath = '//div[@class="XlKvRb"]//a[@class="WwrzSb"]'
+
+        article_links = []
+        try:
+            article_elements = driver.find_elements(By.XPATH, article_xpath)
+            for element in article_elements:
+                # Get the RELATIVE href
+                relative_href = element.get_attribute("href")
+
+                # Construct absolute link (Google News uses relative links)
+                if relative_href and "google.com" not in relative_href:
+                    absolute_href = relative_href
+                    article_links.append(absolute_href)
+
+
+            article_links = article_links[:num_articles]  # Limit the number of links
+        except Exception as e:
+            st.error(f"Error extracting article links: {e}")
+
+        driver.quit()
+        return article_links
+
     except Exception as e:
-        st.error(f"Error fetching Google Trends data: {e}")  # Show the error in Streamlit
-        return None
-
-
-
-def get_google_news_articles(keyword, num_articles=10):
-    """Fetches the latest Google News articles for a keyword."""
-    googlenews = GoogleNews(lang='en', period='7d') #lang is language, period is time period
-    try:
-        googlenews.search(keyword)
-        articles = googlenews.get_news(keyword) #gets all articles
-        if articles is None:
-            return []  # Return an empty list if no articles are found
-
-        articles = articles[:num_articles] #gets num_articles articles
-        return [article['link'] for article in articles]
-    except Exception as e:
-        st.error(f"Error fetching Google News articles: {e}") # Show the error in Streamlit
-        return []  # Return an empty list in case of error
-
-
+        st.error(f"Error fetching Google News articles: {e}")
+        return []
 
 # --- Streamlit App ---
 
-st.title("Keyword Trend Analyzer")
+st.title("Topic Analyzer")
 
-keyword = st.text_input("Enter Keyword or Topic:", "example keyword")
+keyword = st.text_input("Enter Keyword or Topic:", "example topic")
 
 if st.button("Analyze"):
     with st.spinner("Analyzing..."):
-        # Google Trends
-        st.subheader("Google Trends")
-        time.sleep(10)  # Wait 10 seconds before fetching Google Trends data
-        trends_score = get_google_trends_score(keyword)
-        if trends_score is not None:
-            st.write(f"Trend Score: {trends_score:.2f}")  # Format the score
-        else:
-            st.write("Could not retrieve Google Trends data.")
-
-
-        # Google News
-        st.subheader("Google News (Latest Articles)")
-        news_articles = get_google_news_articles(keyword)
+        # Google News Articles
+        st.subheader("Google News Articles (Last 15 Days)")
+        news_articles = get_google_news_articles_selenium(keyword)
         if news_articles:
             for link in news_articles:
-                st.write(f"[Link]({link})")  # Display as a clickable link
+                st.write(f"[Link]({link})")
         else:
-            st.write("No Google News articles found.")
+            st.write("No news articles found.")
