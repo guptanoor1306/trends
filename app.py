@@ -1,6 +1,7 @@
 import streamlit as st
 from pytrends.request import TrendReq
 from GoogleNews import GoogleNews
+import time  # Import the time module
 
 # --- Helper Functions ---
 
@@ -29,7 +30,11 @@ def get_google_news_articles(keyword, num_articles=10):
     googlenews = GoogleNews(lang='en', period='7d') #lang is language, period is time period
     try:
         googlenews.search(keyword)
-        articles = googlenews.get_news(keyword)[:num_articles] #gets num_articles articles
+        articles = googlenews.get_news(keyword) #gets all articles
+        if articles is None:
+            return []  # Return an empty list if no articles are found
+
+        articles = articles[:num_articles] #gets num_articles articles
         return [article['link'] for article in articles]
     except Exception as e:
         st.error(f"Error fetching Google News articles: {e}") # Show the error in Streamlit
@@ -45,9 +50,9 @@ keyword = st.text_input("Enter Keyword or Topic:", "example keyword")
 
 if st.button("Analyze"):
     with st.spinner("Analyzing..."):
-
         # Google Trends
         st.subheader("Google Trends")
+        time.sleep(10)  # Wait 10 seconds before fetching Google Trends data
         trends_score = get_google_trends_score(keyword)
         if trends_score is not None:
             st.write(f"Trend Score: {trends_score:.2f}")  # Format the score
