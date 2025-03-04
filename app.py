@@ -20,14 +20,18 @@ def get_google_news_articles_selenium(keyword, num_articles=10):
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 
+        #Set the path to chromedriver. Check your PATH
         driver = webdriver.Chrome(options=chrome_options)
+
 
         date_15_days_ago = datetime.now() - timedelta(days=15)
         date_str = date_15_days_ago.strftime("%m/%d/%Y")
         search_url = f"https://www.google.com/search?q={keyword}&hl=en-IN&gl=IN&ceid=IN%3Aen&tbm=nws&source=lnt&tbs=cdr:1,cd_min:{date_str},cd_max:{datetime.now().strftime('%m/%d/%Y')}"
 
         driver.get(search_url)
-        time.sleep(random.uniform(2, 7)) # Add initial random delay
+        print(f"Page Source Initial:{driver.page_source}")
+        driver.delete_all_cookies()
+        time.sleep(5)
 
         try:
             # Wait for at least *one* article link to be present and visible
@@ -52,7 +56,7 @@ def get_google_news_articles_selenium(keyword, num_articles=10):
                     print(f"Absolute Href: {absolute_href}")
 
                     # Add the absolute link to the list
-                    if absolute_href and "google.com" not in absolute_href:
+                    if absolute_href and "google.com" not in relative_href:
                         article_links.append(absolute_href)
 
                     time.sleep(random.uniform(0.5, 1.5))  # Add a small random delay
@@ -63,7 +67,7 @@ def get_google_news_articles_selenium(keyword, num_articles=10):
             article_links = article_links[:num_articles]  # Limit the number of links
         except Exception as e:
             print(f"WebDriverWait failed or no article containers found: {e}")
-            st.error(f"Error getting article links: {e}")
+            st.error(f"Error getting article containers: {e}")
 
             # Add the HTML so we can debug
             st.write(driver.page_source)
