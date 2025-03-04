@@ -18,11 +18,11 @@ def get_google_news_articles_selenium(keyword, num_articles=10):
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")  # Add User Agent
+        chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 
         #Set the path to chromedriver. Check your PATH
-        driver = webdriver.Chrome(options=chrome_options)
 
+        driver = webdriver.Chrome(options=chrome_options)
 
         date_15_days_ago = datetime.now() - timedelta(days=15)
         date_str = date_15_days_ago.strftime("%m/%d/%Y")
@@ -49,15 +49,14 @@ def get_google_news_articles_selenium(keyword, num_articles=10):
                     # Find the link within the container
                     link_element = container.find_element(By.CSS_SELECTOR, "a.WwrzSb")
                     relative_href = link_element.get_attribute("href")
+                    title = link_element.text #get the text value from the link to verify
 
-                    #Construct absolute link
-                    absolute_href = relative_href #Absolute Href to reduce confusion
-
-                    print(f"Absolute Href: {absolute_href}")
+                    print(f"Absolute Href: {relative_href}")
+                    print(f"title: {title}")
 
                     # Add the absolute link to the list
-                    if absolute_href and "google.com" not in absolute_href:
-                        article_links.append(absolute_href)
+                    if relative_href and "google.com" not in relative_href:
+                        article_links.append(relative_href)
 
                     time.sleep(random.uniform(0.5, 1.5))  # Add a small random delay
 
